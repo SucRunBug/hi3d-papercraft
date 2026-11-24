@@ -44,7 +44,7 @@ Read this file when the scene includes external 3D `.glb` accent assets or gener
      }
      ```
    - Verify balance >= quoted cost, then immediately call `create_generation` with `{ "quote_id": "<quote_id>", "confirmed": true }`. Never auto-retry a failed paid submission in a loop.
-5. **Download & validate locally:** poll `get_task` until completed, call `get_task_outputs` to obtain the `.glb` URL and `model_page_url`, then persist it with the skill script (validates binary `glTF` header and updates `manifest.json`):
+5. **Download & validate locally:** poll `get_task` until completed, call `get_task_outputs` (or read `assets` from `get_task`) to obtain the `.glb` URL and `model_page_url`. Note: `v3.0` `master` returns two `GLB0.glb` entries—`/target/model/original/GLB0.glb` (~100+ MB print-grade mesh) and `/target/preview/model/original/GLB0.glb` (~18 MB Web-ready mesh with full PBR textures); **always choose the `/target/preview/model/original/GLB0.glb` URL for browser `Three.js` scenes** so multiple assets load fast without exhausting GPU memory. Persist it with the skill script (validates binary `glTF` header and updates `manifest.json`):
    ```bash
    python3 scripts/fetch_hi3d_asset.py \
      --url "<glb_download_url>" \
