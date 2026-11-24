@@ -66,7 +66,7 @@ export const MOODS = {
  */
 export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, ground = '#d9d2c2', view: view0 = {}, testView = { dist: 38, target: [3, 1.5, -6] },
   heroHeight = 3.6, light = {}, lens = {}, walk: walkOpts = { step: 0.75, radius: 0.6 }, moods = MOODS, play = false, focus = null, mood = null, stock = '#f7f0e2', walkArea = null, camBox = null,
-  size = null, aspect = null, subject = null, rotate = false } = {}) {
+  size = null, aspect = null, subject = null, rotate = false, clickToFold = true } = {}) {
   const T0 = performance.now();
   // print costs by the scene line that asked for them: __papercraft.printStats() (and a console line when the build is
   // slow) says which pieces to print smaller (popup res), share (one print, many cards) or cut
@@ -589,7 +589,7 @@ export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, g
       view.tyaw = THREE.MathUtils.clamp(view.tyaw - e.movementX * 0.15, -12, 12);      // the world is filled where the camera
       view.tpitch = THREE.MathUtils.clamp(view.tpitch + e.movementY * 0.12, 40, 55);  // looks; never so low the far edge shows
     });
-    addEventListener('pointerup', () => { if (drag && drag.moved < 6) setOpen(!up); drag = null; });
+    addEventListener('pointerup', () => { if (clickToFold && drag && drag.moved < 6) setOpen(!up); drag = null; });
 
     // walking (?walk): WASD / arrows move the hero over the walk field; the camera follows and refits the shadow map.
     // Movement as the source game moves its player: velocity approaches the wanted one at a constant rate (a snappy
@@ -749,6 +749,7 @@ export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, g
       if (steering) [ix, iz] = steering;                       // steer(x, z): a scripted stick (a video along a route)
       const il = Math.hypot(ix, iz), wx = il ? ix / il : 0, wz = il ? iz / il : 0;
       if (il && !moved) { moved = true; if (focus && !focusAt) { focusFrom.copy(post.focus); focusBlend = 0; } }   // the lens eases from the overview's subject to him
+      if (il && !hero.open) hero.set(1, 0);
       // velocity: a constant-rate approach to the wanted one
       const dvx = wx * SPEED - vel.x, dvz = wz * SPEED - vel.z, dvl = Math.hypot(dvx, dvz), maxDv = ACCEL * dt;
       if (dvl <= maxDv) vel.set(wx * SPEED, 0, wz * SPEED); else { vel.x += dvx / dvl * maxDv; vel.z += dvz / dvl * maxDv; }
@@ -904,7 +905,9 @@ export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, g
     // capture hook: restart() folds everything flat and replays from t = 0, so step(0.8) is a true mid-rise frame;
     // step(sec) advances a fixed clock (stops the real-time loop) and renders
     window.__papercraft = { step(sec, fps = 60) { auto = false; for (let i = 0; i < Math.round(sec * fps); i++) step(1 / fps); render(); return time; }, restart,
-      resume() { last = performance.now(); auto = true; }, toggle: () => setOpen(!up), post, scene, camera, pieces: hinges.length, walk, view, target, heroPos,
+      resume() { last = performance.now(); auto = true; }, toggle: () => setOpen(!up), setOpen, isMoved: () => moved, isUp: () => up,
+      releaseHeroCam() { moved = false; zoneLive = false; vel.set(0, 0, 0); keys.clear(); focusAt = null; assistOff(); },
+      post, scene, camera, pieces: hinges.length, walk, view, target, heroPos,
       /** steer(x, z): walk him that way (a direction on the page, any length; null stops) through the same
        *  acceleration, turning and blockers as the keys: capture.py's route= clips steer him along waypoints. */
       steer: (x, z) => { steering = x == null || (!x && !z) ? null : [x / Math.hypot(x, z), z / Math.hypot(x, z)]; },
