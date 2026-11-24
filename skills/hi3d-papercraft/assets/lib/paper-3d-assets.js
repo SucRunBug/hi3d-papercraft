@@ -32,12 +32,17 @@ async function ensureAddons() {
   addonsPromise = Promise.all([
     loadMod('loaders/GLTFLoader.js'),
     loadMod('loaders/DRACOLoader.js'),
+    loadMod('libs/meshopt_decoder.module.js').catch(() => null),
     loadMod('utils/SkeletonUtils.js'),
-  ]).then(([gltfMod, dracoMod, skelMod]) => {
+  ]).then(async ([gltfMod, dracoMod, meshoptMod, skelMod]) => {
     const draco = new dracoMod.DRACOLoader();
     draco.setDecoderPath(DRACO_DECODER_URL);
     sharedLoader = new gltfMod.GLTFLoader();
     sharedLoader.setDRACOLoader(draco);
+    if (meshoptMod?.MeshoptDecoder) {
+      if (meshoptMod.MeshoptDecoder.ready) await meshoptMod.MeshoptDecoder.ready;
+      sharedLoader.setMeshoptDecoder(meshoptMod.MeshoptDecoder);
+    }
     return { loader: sharedLoader, SkeletonUtils: skelMod };
   });
   return addonsPromise;
